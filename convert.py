@@ -2,19 +2,18 @@
 #coding: utf8
 
 from sys import argv
+from constants import Constants
 import sys
 import json
 import codecs
 from string import digits, ascii_uppercase, ascii_lowercase
 from itertools import product
 
-SECTION_SEPARATOR = u'_'
-
 class TokenizerState:
-    START, WHITESPACE, WORD, CURLY1, CURLY2, CURLY3 = range(6)
+    START, SINGLE_CHARACTER, WORD, CURLY1, CURLY2, CURLY3 = range(6)
 
 class Tokenizer:
-    WHITESPACE_CHARACTERS = u' :;/.",()‘—\n\r\t'
+    SINGLE_CHARACTERS = u' :;/.",()‘—\n\r\t'
     CURLY_CHARACTER_START = u'{'
     CURLY_CHARACTER_END = u'}'
 
@@ -43,16 +42,16 @@ class Tokenizer:
 
     def getStateTransition(self, state, character):
         if state == TokenizerState.START:
-            if character in Tokenizer.WHITESPACE_CHARACTERS:
-                return TokenizerState.WHITESPACE
+            if character in Tokenizer.SINGLE_CHARACTERS:
+                return TokenizerState.SINGLE_CHARACTER
             elif character in Tokenizer.CURLY_CHARACTER_START:
                 return TokenizerState.CURLY1
             else:
                 return TokenizerState.WORD
-        elif state == TokenizerState.WHITESPACE:
+        elif state == TokenizerState.SINGLE_CHARACTER:
             return None
         elif state == TokenizerState.WORD:
-            if character in Tokenizer.WHITESPACE_CHARACTERS:
+            if character in Tokenizer.SINGLE_CHARACTERS:
                 return None
             elif character in Tokenizer.CURLY_CHARACTER_START:
                 return None
@@ -76,14 +75,14 @@ class Tokenizer:
 def generateDictionaryEncodings():
     dictionaryEncodings = []
     chars = digits + ascii_uppercase + ascii_lowercase
-    for n in range(1, 3 + 1):
-        for comb in product(chars, repeat=n):
+    for n in range(1, Constants.MAX_ENCODING_CHARACTERS + 1):
+        for comb in product(chars, repeat = n):
             dictionaryEncodings.append(''.join(comb))
     return dictionaryEncodings
 
 def readCardsFromFile(fileName):
     cardsJson = ''
-    with codecs.open(fileName, encoding='utf-8') as fileHandle:
+    with codecs.open(fileName, encoding = 'utf-8') as fileHandle:
         fileContents = fileHandle.read()
         cardsJson = json.loads(fileContents)
     return cardsJson
@@ -103,7 +102,7 @@ def createEncodingAndDecodingDictionaries(cards):
     decodingDictionary = {}
     for token in sortedUniqueTokens:
         dictionaryKey = ''
-        if len(token) == 1 and (32 <= ord(token) or ord(token) >= 47):
+        if len(token) == 1 and 32 <= ord(token) and ord(token) <= 47:
             dictionaryKey = token
         elif len(token) == 1 and ord(token) == 10:
             dictionaryKey = '~'
@@ -161,7 +160,7 @@ def getFormattedCard(card, encodingDictionary):
             powerTokens = getTokensForCardField(card, 'power')            
             toughnessTokens = getTokensForCardField(card, 'toughness')
             cardFields.append(getEncodedTokenString(powerTokens, encodingDictionary) + encodingDictionary['/'] + getEncodedTokenString(toughnessTokens, encodingDictionary))
-        return SECTION_SEPARATOR.join(cardFields)
+        return Constants.SECTION_SEPARATOR.join(cardFields)
     
 def getEncodedTokenString(tokens, encodingDictionary):
     encodedTokens = []
